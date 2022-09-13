@@ -12,7 +12,6 @@
 
 # nonebot-plugin-moyu-npu-yqtb-reminder
 西北工业大学疫情填报自动提醒QQ机器人
-</div>
 
 <a href="./LICENSE">
     <img src="https://img.shields.io/github/license/A-kirami/nonebot-plugin-moyu.svg" alt="license">
@@ -21,6 +20,7 @@
     <img src="https://img.shields.io/pypi/v/nonebot-plugin-moyu.svg" alt="pypi">
 </a>
 <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="python">
+</div>
 
 ## 💿 安装
 
