@@ -1,7 +1,6 @@
 '''
 西北工业大学疫情填报自动提醒机器人
 '''
-from base64 import encode
 import re
 import time
 import json

@@ -38,11 +38,13 @@
 | 疫情填报+帮助 | 帮助信息 |
 
 ### 部署方式
-1. 把机器人拉入年级QQ群
-2. 给予此机器人能发言的权限(例如管理员)
-3. 填写[`subscribe.json`](https://github.com/npuNancy/nonebot-plugin-moyu-npu-yqtb-reminder/subscribe.json)
+1.把机器人拉入年级QQ群
+2.给予此机器人能发言的权限(例如管理员)
+3.填写[`subscribe.json`](https://github.com/npuNancy/nonebot-plugin-moyu-npu-yqtb-reminder/subscribe.json)
 ## 参考 ##
 [nonebot-plugin-moyu](https://github.com/A-kirami/nonebot-plugin-moyu)
 [npu-auto-remind-yqtb](https://github.com/npuNancy/npu-auto-remind-yqtb)
 
 ## TODO ##
+1.目前仅支持QQ群
+2.新大一学号可能是DL开头，需要进行适配
