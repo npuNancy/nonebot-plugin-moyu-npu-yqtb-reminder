@@ -12,6 +12,7 @@
 
 # nonebot-plugin-moyu-npu-yqtb-reminder
 西北工业大学疫情填报自动提醒QQ机器人
+</div>
 
 <a href="./LICENSE">
     <img src="https://img.shields.io/github/license/A-kirami/nonebot-plugin-moyu.svg" alt="license">
@@ -40,7 +41,7 @@
 ### 部署方式
 1.把机器人拉入年级QQ群
 2.给予此机器人能发言的权限(例如管理员)
-3.填写[`subscribe.json`](https://github.com/npuNancy/nonebot-plugin-moyu-npu-yqtb-reminder/subscribe.json)
+3.填写[`subscribe.json`](https://github.com/npuNancy/nonebot-plugin-moyu-npu-yqtb-reminder/blob/main/subscribe.json)
 ## 参考 ##
 [nonebot-plugin-moyu](https://github.com/A-kirami/nonebot-plugin-moyu)
 [npu-auto-remind-yqtb](https://github.com/npuNancy/npu-auto-remind-yqtb)
