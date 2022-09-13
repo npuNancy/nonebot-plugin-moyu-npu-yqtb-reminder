@@ -1,0 +1,14 @@
+{
+    "QQ群号": {
+        "nickname": "此信息名称",
+        "group_id": "QQ群号",
+        "username": "翱翔门户账号",
+        "password": "翱翔门户密码",
+        "grade": [
+            "年级信息"
+        ],
+        "hour": "10-21",
+        "minute": "0",
+        "state": "off"
+    }
+}
