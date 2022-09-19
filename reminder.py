@@ -118,7 +118,8 @@ class Spider_yqtb():
 
             # 遍历table
             for tr in tbody.findAll('tr')[1:]:
-                name = tr.find_all('td')[0].getText()  # 姓名
+                # 名字太长会出现 "交哈尔·卡..." 的情况
+                name = tr.find_all('td')[0].getText().replace("...", "")  # 姓名
                 std_id = tr.find_all('td')[1].getText()  # 学号
                 status = tr.find_all('td')[2].getText().strip()  # 未上报 or 免上报
 
@@ -209,7 +210,7 @@ async def push_msg(group_id: str, subscribe: dict):
     '''
     疫情填报消息推送
     '''
-    bot = get_bot()
+    bot = get_bot("158679821")
     msg = await yqtb(group_id=group_id, subscribe=subscribe)
     await bot.send_group_msg(group_id=int(group_id), message=msg)
 
