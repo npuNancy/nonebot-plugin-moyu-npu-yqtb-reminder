@@ -139,10 +139,12 @@ def is_valid_user(name: str, group_members: list):
     '''
     flag = False
     res_name = None
+    global finded_member
     for member_name in group_members:
-        if name in member_name:
+        if name in member_name and member_name not in finded_member:
             flag = True
             res_name = member_name
+            finded_member.append(member_name)
             break
     return flag, res_name
 
@@ -159,11 +161,14 @@ def get_msg(student_dict: dict, group_member_dict: dict, config):
     '''
     msg = Message()
     invalid_user = []
+    global finded_member
+    finded_member = [] # 存储已找到的QQ群成员
     for key, value in student_dict.items():
         # 只需要 config["grade"] 内设置的年级
         if int(key) not in config["grade"]:
             continue
         
+        value = sorted(value, key=lambda x: len(x), reverse=True)
         for user in value:
             flag, username = is_valid_user(user, group_member_dict.keys())
             if not flag:
