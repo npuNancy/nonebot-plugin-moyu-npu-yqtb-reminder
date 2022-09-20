@@ -21,18 +21,11 @@ from nonebot.params import Arg, CommandArg
 from nonebot.adapters.onebot.v11 import Bot, Event
 from nonebot.adapters.onebot.v11 import GroupMessageEvent
 from nonebot.adapters.onebot.v11 import Message, MessageSegment
+from tomlkit import value
 
 require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
 
-
-'''
-FIXME: 每次运行代码时, 先建立名字与QQ昵称的映射表
-dict = {
-    "1班-张云逸-xx": 1622338967,
-    "1班-张云-xxxxx": 2084556863}
-目前的代码无法完全修复这个bug
-'''
 
 def save_subscribes():
     '''
@@ -45,17 +38,17 @@ class Spider_yqtb():
 
     '''
     描述:
-        从疫情填报系统获取未填报人员名单
+        从疫情填报系统获取 全体名单 及 未填报人员名单
     参数:
         username: 翱翔门户账号
         password: 翱翔门户密码
     '''
 
     def __init__(self, username, password) -> None:
-    
+
+        # flag=zrs 总人数, flag=wtbrs 未填报人数
         self.login_url = "https://uis.nwpu.edu.cn/cas/login"  # 翱翔门户登录url
-        self.post_url = "https://yqtb.nwpu.edu.cn/wx/ry/fktj_list.jsp?flag=wtbrs&gjc=&rq={}&bjbh=&PAGENUMBER={}&PAGEGROUP=0"
-        self.all_user = "https://yqtb.nwpu.edu.cn/wx/ry/fktj_list.jsp?flag=zrs&rq={}&PAGENUMBER={}" # 总人数
+        self.post_url = "https://yqtb.nwpu.edu.cn/wx/ry/fktj_list.jsp?flag={}&gjc=&rq={}&bjbh=&PAGENUMBER={}&PAGEGROUP=0"
         
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36',
@@ -77,11 +70,9 @@ class Spider_yqtb():
         self.session = self.login()
         self.session = self.check_session()
 
-        # 获取PageNumber
-        self.page_number = self.get_page_number()
-
-        # 获取未填报人员名单
-        self.student_dict = self.get_name_dict()
+        # 获取全体名单 和 未填报名单
+        self.page_number = self.get_page_number(type="zrs")
+        self.student_dict_all, self.student_dict_wtb = self.get_name_dict(type="zrs")
 
     def login(self):
         # 登录
@@ -106,7 +97,6 @@ class Spider_yqtb():
                 response = self.session.get("https://yqtb.nwpu.edu.cn/wx/ry/jrsb.jsp")
                 pattern = r"url:'ry_util\.jsp\?sign=(.*).*'"
                 res = re.findall(pattern, response.text)
-        # print('res:' + str(res))
         if len(res) == 0:
             logger.error("error in script, please contact to the author")
         time.sleep(0.5)
@@ -114,19 +104,26 @@ class Spider_yqtb():
 
         return self.session
 
-    def get_page_number(self):
+    def get_page_number(self, type):
         # 获取PageNumber
-        html = self.session.get(self.post_url.format(self.date, 1))
-        number = int(re.findall(r"共(\d*)条", html.text)[0])  # 信息总数
-        page_number = int(number / 15) + 1  # 每页有15条信息
+        url = "https://yqtb.nwpu.edu.cn/wx/ry/fktj_list.jsp?flag=zrs&gjc=&rq={}&bjbh=&PAGENUMBER={}&PAGEGROUP=0"
+        html = self.session.get(self.post_url.format(type, self.date, 1))
+        text = html.text.replace('&nbsp;', ' ')
+        number, page_number = re.findall(r"共(\d*)条 1/(\d*)页", text)[0]
+        number = int(number)
+        page_number = int(page_number)
+        
+        if page_number != number // 15 +1:
+            logger.error(f"爬虫页数错误, 页数: {page_number}, 总人数: {number}")
         return page_number
 
-    def get_name_dict(self):
-        student_dict = {}
+    def get_name_dict(self, type="zrs"):
+        student_dict_all = {}
+        student_dict_wtb = {}
         # 遍历所有page
-        for i in range(1, int(self.page_number)+1):
+        for i in range(1, self.page_number+1):
             logger.info(f"Page: {i}")
-            html = self.session.get(self.post_url.format(self.date, i))
+            html = self.session.get(self.post_url.format(type, self.date, i))
             soup = BeautifulSoup(html.text, 'html.parser')
             table = soup.find_all("table")[0]
 
@@ -137,17 +134,24 @@ class Spider_yqtb():
                 # 名字太长会出现 "交哈尔·卡..." 的情况
                 name = tr.find_all('td')[0].getText().replace("...", "")  # 姓名
                 std_id = tr.find_all('td')[1].getText()  # 学号
-                status = tr.find_all('td')[2].getText().strip()  # 未上报 or 免上报
+                status = tr.find_all('td')[2].getText().strip()  # 已上报 or 未上报 or 免上报
 
-                if status != "未上报":
-                    continue
+                name_stdid = f"{name}_{std_id}"
 
-                # 添加某个年级
-                if std_id[:4] not in student_dict.keys():
-                    student_dict[std_id[:4]] = []
-                student_dict[std_id[:4]].append(name)
-            time.sleep(0.5)
-        return student_dict
+                # 未填报名单 添加某个年级
+                if status == "未上报":
+                    if std_id[:4] not in student_dict_wtb.keys():
+                        student_dict_wtb[std_id[:4]] = []
+                    student_dict_wtb[std_id[:4]].append(name_stdid)
+
+                # 全体名单 添加某个年级
+                if std_id[:4] not in student_dict_all.keys():
+                    student_dict_all[std_id[:4]] = []
+                student_dict_all[std_id[:4]].append(name_stdid)
+
+            time.sleep(0.1)
+
+        return student_dict_all, student_dict_wtb
 
 def is_valid_user(name: str, group_members: list, finded_member: list):
     '''
@@ -163,31 +167,61 @@ def is_valid_user(name: str, group_members: list, finded_member: list):
             break
     return flag, res_name
 
-def get_msg(student_dict: dict, group_member_dict: dict, config):
+def get_name_qqid_map(std_dict_all: dict, group_member_dict: dict, config):
+    '''
+    describe: 构造姓名-QQ号映射表
+    '''
+    names = []
+    for key, value in std_dict_all.items():
+        # 只需要 config["grade"] 内设置的年级
+        if int(key) in config["grade"]:
+            names += value
+    
+    name_qqid_map = {}
+    invalid_name = [] # 没在群成员名单内的名字
+    finded_member = [] # 存储已找到的QQ群成员
+    # 从长到短遍历
+    names = sorted(names, key=lambda x: len(x), reverse=True)
+    group_members = group_member_dict.keys()
+    for name_stdid in names:
+        name = name_stdid.split("_")[0]
+        flag, qq_name = is_valid_user(name, group_members, finded_member)
+        
+        if not flag:
+            invalid_name.append(name)
+        else:
+            finded_member.append(qq_name)
+            qq_id = group_member_dict[qq_name]
+            name_qqid_map[name_stdid] = qq_id # 用 name_stdid 防止同名
+
+    return name_qqid_map
+
+def get_msg(std_dict_wtb: dict, name_qqid_map: dict, config):
     '''
     describe: 构建此群的 @未填报人员 消息对象
     '''
+    names = []
+    for key, value in std_dict_wtb.items():
+        # 只需要 config["grade"] 内设置的年级
+        if int(key) in config["grade"]:
+            names += value
+
     msg = Message()
     invalid_user = []
-    finded_member = [] # 存储已找到的QQ群成员
-    for key, value in student_dict.items():
-        # 只需要 config["grade"] 内设置的年级
-        if int(key) not in config["grade"]:
-            continue
-        
-        names = sorted(value, key=lambda x: len(x), reverse=True)
-        group_members = sorted(group_member_dict.keys(), key=lambda x: len(x), reverse=False)
-        for user in names:
-            flag, username = is_valid_user(user, group_members, finded_member)
-            if not flag:
-                # 没在群成员名单内的名字
-                invalid_user.append(user)
-            else:
-                finded_member.append(username)
-                user_id = group_member_dict[username]
-                at = MessageSegment.at(user_id)
-                msg.append(at)
-    return msg, invalid_user
+    for name_stdid in names:
+        name = name_stdid.split("_")[0]
+
+        if name_stdid not in name_qqid_map.keys():
+            invalid_user.append(name)
+        else:
+            qq_id = name_qqid_map[name_stdid]
+            at = MessageSegment.at(qq_id)
+            msg.append(at)
+    
+    text_1 = MessageSegment.text("请疫情填报！\n")
+    text_2 = MessageSegment.text(f"{'、'.join(invalid_user)} 请疫情填报！查无此人！" if len(invalid_user) else "")
+
+    return msg.append(text_1).append(text_2)
 
 subscribe_path = Path(__file__).parent / "subscribe.json"
 subscribe_list = json.loads(subscribe_path.read_text("utf-8")) if subscribe_path.is_file() else {}
@@ -209,16 +243,16 @@ async def yqtb(group_id: str, subscribe: dict):
 
     # 获取未疫情填报学生
     spider_yqtb = Spider_yqtb(subscribe['username'], subscribe["password"])
-    student_dict = spider_yqtb.student_dict
+    student_dict_all = spider_yqtb.student_dict_all
+    student_dict_wtb = spider_yqtb.student_dict_wtb
+
+    # 构造姓名-QQ群昵称映射表
+    name_qqid_map = get_name_qqid_map(student_dict_all, group_member_dict, subscribe)
 
     # 构造消息
-    msg, invalid_user = get_msg(student_dict, group_member_dict, subscribe)
-
-    # 发送消息
-    text_1 = MessageSegment.text("请疫情填报！\n")
-    text_2 = MessageSegment.text(f"{'、'.join(invalid_user)} 请疫情填报！查无此人！") if len(invalid_user) else MessageSegment.text("")
+    msg = get_msg(student_dict_wtb, name_qqid_map, subscribe)
     
-    return msg.append(text_1).append(text_2)
+    return msg
 
 async def push_msg(group_id: str, subscribe: dict):
     '''
