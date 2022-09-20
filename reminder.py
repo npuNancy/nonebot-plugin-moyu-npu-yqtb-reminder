@@ -26,6 +26,21 @@ require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
 
 
+'''
+FIXME: 每次运行代码时, 先建立名字与QQ昵称的映射表
+dict = {
+    "1班-张云逸-xx": 1622338967,
+    "1班-张云-xxxxx": 2084556863}
+目前的代码无法完全修复这个bug
+'''
+
+def save_subscribes():
+    '''
+    保存订阅信息
+    '''
+    str = json.dumps(subscribe_list, ensure_ascii=False)
+    subscribe_path.write_text(str, encoding="utf-8")
+
 class Spider_yqtb():
 
     '''
@@ -40,6 +55,7 @@ class Spider_yqtb():
     
         self.login_url = "https://uis.nwpu.edu.cn/cas/login"  # 翱翔门户登录url
         self.post_url = "https://yqtb.nwpu.edu.cn/wx/ry/fktj_list.jsp?flag=wtbrs&gjc=&rq={}&bjbh=&PAGENUMBER={}&PAGEGROUP=0"
+        self.all_user = "https://yqtb.nwpu.edu.cn/wx/ry/fktj_list.jsp?flag=zrs&rq={}&PAGENUMBER={}" # 总人数
         
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36',
@@ -93,7 +109,7 @@ class Spider_yqtb():
         # print('res:' + str(res))
         if len(res) == 0:
             logger.error("error in script, please contact to the author")
-        time.sleep(1)
+        time.sleep(0.5)
         self.session.headers.update({'referer': 'https://yqtb.nwpu.edu.cn/wx/ry/jrsb.jsp'})
 
         return self.session
@@ -130,30 +146,22 @@ class Spider_yqtb():
                 if std_id[:4] not in student_dict.keys():
                     student_dict[std_id[:4]] = []
                 student_dict[std_id[:4]].append(name)
-            time.sleep(1)
+            time.sleep(0.5)
         return student_dict
 
-def is_valid_user(name: str, group_members: list):
+def is_valid_user(name: str, group_members: list, finded_member: list):
     '''
     describe:判断此人是否在群里
     '''
     flag = False
     res_name = None
-    global finded_member
+    
     for member_name in group_members:
         if name in member_name and member_name not in finded_member:
             flag = True
             res_name = member_name
-            finded_member.append(member_name)
             break
     return flag, res_name
-
-def save_subscribes():
-    '''
-    保存订阅信息
-    '''
-    str = json.dumps(subscribe_list, ensure_ascii=False)
-    subscribe_path.write_text(str, encoding="utf-8")
 
 def get_msg(student_dict: dict, group_member_dict: dict, config):
     '''
@@ -161,20 +169,21 @@ def get_msg(student_dict: dict, group_member_dict: dict, config):
     '''
     msg = Message()
     invalid_user = []
-    global finded_member
     finded_member = [] # 存储已找到的QQ群成员
     for key, value in student_dict.items():
         # 只需要 config["grade"] 内设置的年级
         if int(key) not in config["grade"]:
             continue
         
-        value = sorted(value, key=lambda x: len(x), reverse=True)
-        for user in value:
-            flag, username = is_valid_user(user, group_member_dict.keys())
+        names = sorted(value, key=lambda x: len(x), reverse=True)
+        group_members = sorted(group_member_dict.keys(), key=lambda x: len(x), reverse=False)
+        for user in names:
+            flag, username = is_valid_user(user, group_members, finded_member)
             if not flag:
                 # 没在群成员名单内的名字
                 invalid_user.append(user)
             else:
+                finded_member.append(username)
                 user_id = group_member_dict[username]
                 at = MessageSegment.at(user_id)
                 msg.append(at)
@@ -320,8 +329,8 @@ async def handle_time(event: GroupMessageEvent, state: T_State, time_arg: Messag
         await yqtb_matcher.finish("已退出疫情填报定时提醒设置")
 
     match = re.search(r"((\d+)|((\d+,)+\d+)|(\d+-\d+))[:：]((\d+)|((\d+,)+\d+)|(\d+-\d+))", time)
-    print(match)
     if match and match[1] and match[6]:
+        #通过指令设置定时任务
         yqtb_subscribe(str(event.group_id), match[1], match[6])
         await yqtb_matcher.finish(f"疫情填报的每日提醒时间已设置为：{match[1]}:{match[6]}")
     else:
