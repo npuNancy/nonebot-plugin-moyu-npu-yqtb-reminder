@@ -42,6 +42,12 @@
 1.把机器人拉入年级QQ群
 2.给予此机器人能发言的权限(例如管理员)
 3.填写[`subscribe.json`](https://github.com/npuNancy/nonebot-plugin-moyu-npu-yqtb-reminder/blob/main/subscribe.json)
+
+### 双因子认证
+新IP设备首次访问翱翔门户需要短信验证码登录
+无图形界面服务器可搭建代理服务，完成IP地址的认证
+参考[如何在CentOS 7上安装和配置Squid代理](https://www.myfreax.com/how-to-install-and-configure-squid-proxy-on-centos-7/)
+
 ## 参考 ##
 [nonebot-plugin-moyu](https://github.com/A-kirami/nonebot-plugin-moyu)
 [npu-auto-remind-yqtb](https://github.com/npuNancy/npu-auto-remind-yqtb)
