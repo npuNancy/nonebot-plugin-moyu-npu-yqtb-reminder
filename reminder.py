@@ -55,6 +55,7 @@ class Spider_yqtb():
             'Content-Type': 'application/x-www-form-urlencoded',
         }
 
+        self.session = requests.session()
         self.login_data = {
             # 账号
             'username': username,
@@ -62,28 +63,41 @@ class Spider_yqtb():
             'password': password,
             'currentMenu': '1',
             'execution': 'e1s1',
-            "_eventId": "submit"
+            "_eventId": "submit",
+            "mfaState": self.get_mfaState(self.session, username, password)
         }
         self.date = datetime.now().strftime("%Y-%m-%d")  # 当前日期
 
         # 登录
-        self.session = self.login()
-        self.session = self.check_session()
+        self.login()
+        self.check_session()
 
         # 获取全体名单 和 未填报名单
         self.page_number = self.get_page_number(type="zrs")
         self.student_dict_all, self.student_dict_wtb = self.get_name_dict(type="zrs")
 
+    def get_mfaState(self, session, username, password):
+        
+        header = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.3s',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Referer': 'https://yqtb.nwpu.edu.cn/wx/ry/jrsb_xs.jsp',
+        }
+        url = f"https://uis.nwpu.edu.cn/cas/mfa/detect?username={username}&password={password}"
+        response = session.post(url, headers=header)
+
+        mfaState = response.json()["data"]["state"]
+        return mfaState
+
     def login(self):
         # 登录
-        session = requests.session()
+        session = self.session
         response = session.get(self.login_url, headers=self.headers)
         execution = re.findall(r'name="execution" value="(.*?)"', response.text)[0]
         self.login_data['execution'] = execution
         response = session.post(self.login_url, data=self.login_data, headers=self.headers)
         if "欢迎使用" in response.text:
             logger.success(f"login successfully")
-            return session
         else:
             logger.error(f"login unsuccessfully")
             exit(1)
@@ -102,7 +116,6 @@ class Spider_yqtb():
         time.sleep(0.5)
         self.session.headers.update({'referer': 'https://yqtb.nwpu.edu.cn/wx/ry/jrsb.jsp'})
 
-        return self.session
 
     def get_page_number(self, type):
         # 获取PageNumber
