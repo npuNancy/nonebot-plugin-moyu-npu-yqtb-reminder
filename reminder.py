@@ -241,6 +241,22 @@ subscribe_list = json.loads(subscribe_path.read_text("utf-8")) if subscribe_path
 
 driver = get_driver()
 
+def get_group_member_dict(group_member_list):
+    '''
+    构造QQ昵称-QQ号的字典
+    '''
+    idx = 0
+    group_member_dict = {}
+    for x in group_member_list:
+        if x['card'] in group_member_dict.keys():
+            group_member_dict[f"{x['card']}_{idx}"] = x['user_id']
+            idx = idx + 1
+        else:
+            group_member_dict[x['card']] = x['user_id']
+
+    return group_member_dict
+
+
 async def yqtb(group_id: str, subscribe: dict):
     '''
     description: 
@@ -252,7 +268,8 @@ async def yqtb(group_id: str, subscribe: dict):
     bot = get_bot("158679821")
     group_id = int(group_id)
     group_member_list = await bot.get_group_member_list(group_id=group_id)
-    group_member_dict = {x['card']: x['user_id'] for x in group_member_list}
+    # group_member_dict = {x['card']: x['user_id'] for x in group_member_list}
+    group_member_dict = get_group_member_dict(group_member_list)
 
     # 获取未疫情填报学生
     spider_yqtb = Spider_yqtb(subscribe['username'], subscribe["password"])
