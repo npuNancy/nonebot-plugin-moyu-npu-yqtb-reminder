@@ -2,6 +2,7 @@
     "QQ群号": {
         "nickname": "此信息名称",
         "group_id": "QQ群号",
+        "bot_id": "机器人QQ号",
         "username": "翱翔门户账号",
         "password": "翱翔门户密码",
         "grade": [
@@ -9,6 +10,9 @@
         ],
         "hour": "10-21",
         "minute": "0",
-        "state": "on"
+        "state": "on",
+        "hour_hsjc": "9",
+        "minute_hsjc": "00",
+        "state_hsjc": "off"
     }
 }

@@ -33,13 +33,7 @@ from .function import get_group_member_dict
 from .function import get_msg
 from .function import is_valid_user
 from .function import get_name_qqid_map
-
-def save_subscribes():
-    '''
-    保存订阅信息
-    '''
-    str = json.dumps(subscribe_list, ensure_ascii=False)
-    subscribe_path.write_text(str, encoding="utf-8")
+from .function import save_subscribes
 
 
 subscribe_path = Path(__file__).parent / "subscribe.json"
@@ -56,7 +50,7 @@ async def yqtb(group_id: str, subscribe: dict):
         msg
     '''
     # 获取群成员 昵称与QQ号的对应关系
-    bot = get_bot("158679821")
+    bot = get_bot(subscribe["bot_id"])
     group_id = int(group_id)
     group_member_list = await bot.get_group_member_list(group_id=group_id)
     # group_member_dict = {x['card']: x['user_id'] for x in group_member_list}
@@ -79,7 +73,7 @@ async def push_msg(group_id: str, subscribe: dict):
     '''
     疫情填报消息推送
     '''
-    bot = get_bot("158679821")
+    bot = get_bot(subscribe["bot_id"])
     msg = await yqtb(group_id=group_id, subscribe=subscribe)
     await bot.send_group_msg(group_id=int(group_id), message=msg)
 
@@ -109,7 +103,7 @@ def yqtb_subscribe(group_id: str, hour: str, minute: str) -> None:
     subscribe_list[group_id]['hour'] = hour
     subscribe_list[group_id]['minute'] = minute
     subscribe_list[group_id]['state'] = "on"
-    save_subscribes()
+    save_subscribes(subscribe_list, subscribe_path)
     scheduler.add_job(
         push_msg,
         "cron",
@@ -124,7 +118,6 @@ def yqtb_subscribe(group_id: str, hour: str, minute: str) -> None:
 
 
 yqtb_matcher = on_command("疫情填报", aliases={"疫情填报提醒"})
-
 @yqtb_matcher.handle()
 async def reminder(event: GroupMessageEvent, matcher: Matcher, args: Message = CommandArg()):
     '''
@@ -151,7 +144,7 @@ async def reminder(event: GroupMessageEvent, matcher: Matcher, args: Message = C
         elif "禁用" in cmdarg or "关闭" in cmdarg:
             if subscribe_list[group_id]["state"] == "on":
                 subscribe_list[group_id]["state"] = "off"
-                save_subscribes()
+                save_subscribes(subscribe_list, subscribe_path)
                 scheduler.remove_job(f"yqtb_reminder_{event.group_id}")
             await matcher.finish("疫情填报提醒已禁用/关闭")
         elif "帮助" in cmdarg or "help" in cmdarg:

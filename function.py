@@ -1,4 +1,4 @@
-
+import json
 from nonebot.adapters.onebot.v11 import Message, MessageSegment
 
 def get_group_member_dict(group_member_list):
@@ -44,7 +44,6 @@ def get_msg(std_dict_wtb: dict, name_qqid_map: dict, config, type: str):
 
     return msg.append(text_1).append(text_2)
 
-
 def is_valid_user(name: str, group_members: list, finded_member: list):
     '''
     describe:判断此人是否在群里
@@ -87,3 +86,10 @@ def get_name_qqid_map(std_dict_all: dict, group_member_dict: dict, config):
             name_qqid_map[name_stdid] = qq_id # 用 name_stdid 防止同名
 
     return name_qqid_map
+
+def save_subscribes(subscribe_list, subscribe_path):
+    '''
+    保存订阅信息
+    '''
+    str = json.dumps(subscribe_list, ensure_ascii=False)
+    subscribe_path.write_text(str, encoding="utf-8")
