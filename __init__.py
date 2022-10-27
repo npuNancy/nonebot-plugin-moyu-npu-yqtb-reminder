@@ -11,9 +11,8 @@ __help_plugin_name__ = "npu-remaind-yqtb"
 # Deprecated for nonebot-plugin-help 0.3.0+, prefer PluginMetadata.usage
 # 若此文本不存在，将显示包的__doc__
 __usage__ = '''
-    西北工业大学自动提醒疫情填报、核酸检测
+    西北工业大学自动提醒疫情填报
     #疫情填报 # 自动提醒疫情填报
-    #核酸检测 # 自动核酸检测填报
 '''
 
 

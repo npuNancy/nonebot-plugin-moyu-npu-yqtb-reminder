@@ -62,8 +62,6 @@ async def hsjc(group_id: str, subscribe: dict):
         # 构造消息
         msg.append(MessageSegment.text(f"{campus}:\n"))
         msg += get_msg(student_dict_wsm, name_qqid_map, subscribe, type="核酸检测")
-    # return Message().append(MessageSegment.text(f"测试消息:\n测试消息:\n测试消息:\n测试消息:\n测试消息:\n测试消息:\n"))
-    print(msg)
     return msg
 
 async def push_msg(group_id: str, subscribe: dict):
@@ -127,8 +125,13 @@ async def reminder(event: GroupMessageEvent, matcher: Matcher, args: Message = C
         logger.error(f"can not find group_id: {group_id} in subscribe_list")
     group_subscribe = subscribe_list[group_id]
 
-
-    if cmdarg := args.extract_plain_text():
+    # TODO 获取发言人id，与白名单比对
+    white_list = group_subscribe["white_list"]
+    user_id = str(event.user_id)
+    if user_id not in white_list and "*" not in white_list:
+        logger.warning(f"群：{group_id} 的非白名单用户 {user_id} 试图使用机器人")
+        await matcher.finish()
+    elif cmdarg := args.extract_plain_text():
         if "状态" in cmdarg:
             push_state = scheduler.get_job(f"hsjc_reminder_{group_id}")
             hsjc_state = "核酸检测提醒状态：\n每日提醒: " + ("已开启" if push_state else "已关闭")
@@ -174,7 +177,7 @@ async def handle_time(event: GroupMessageEvent, state: T_State, time_arg: Messag
     if any(cancel in time for cancel in ["取消", "放弃", "退出"]):
         await hsjc_matcher.finish("已退出核酸检测定时提醒设置")
 
-    match = re.search(r"((\d+)|((\d+,)+\d+)|(\d+-\d+))[:：]((\d+)|((\d+,)+\d+)|(\d+-\d+))", time)
+    match = re.search(r"((\d+)|((\d+,)+\d+)|(\d+-\d+))[:：](((\d+,)+\d+)|(\d+-\d+)|(\d+))", time)
     if match and match[1] and match[6]:
         #通过指令设置定时任务
         hsjc_subscribe(str(event.group_id), match[1], match[6])

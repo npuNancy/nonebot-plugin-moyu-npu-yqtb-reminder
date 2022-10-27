@@ -111,7 +111,10 @@ class Spider_hsjc():
         html = self.session.get("https://xsgl.nwpu.edu.cn/app/wx/xsgl/sjtj.jsp")
         soup = BeautifulSoup(html.text, 'html.parser')
         
-        select = soup.find_all("select", id="smlx")[0]
+        try:
+            select = soup.find_all("select", id="smlx")[0]
+        except Exception as e:
+            logger.error(str(e))
         for option in select.findAll("option"):
             text = option.getText()
             value = option.get('value')
@@ -127,7 +130,7 @@ class Spider_hsjc():
         self.session.get("https://xsgl.nwpu.edu.cn/app/wx/xsgl/sjtj.jsp")
         html = self.session.get(self.post_url.format(type, 1, smlx))
         text = html.text.replace('&nbsp;', ' ')
-        number, page_number = re.findall(r"共(\d*)条 1/(\d*)页", text)[0]
+        number, page_number = re.findall(r"共(\d*)条 [1|0]/(\d*)页", text)[0]
         number = int(number)
         page_number = int(page_number)
         

@@ -176,7 +176,7 @@ async def handle_time(event: GroupMessageEvent, state: T_State, time_arg: Messag
     if any(cancel in time for cancel in ["取消", "放弃", "退出"]):
         await yqtb_matcher.finish("已退出疫情填报定时提醒设置")
 
-    match = re.search(r"((\d+)|((\d+,)+\d+)|(\d+-\d+))[:：]((\d+)|((\d+,)+\d+)|(\d+-\d+))", time)
+    match = re.search(r"((\d+)|((\d+,)+\d+)|(\d+-\d+))[:：](((\d+,)+\d+)|(\d+-\d+)|(\d+))", time)
     if match and match[1] and match[6]:
         #通过指令设置定时任务
         yqtb_subscribe(str(event.group_id), match[1], match[6])

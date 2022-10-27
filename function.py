@@ -21,7 +21,10 @@ def get_msg(std_dict_wtb: dict, name_qqid_map: dict, config, type: str):
     describe: 构建此群的 @未填报人员 消息对象
     type: 疫情填报 or 核酸检测
     '''
-    names = []
+    # 校外住宿 无需提醒学生的 name_stdid
+    exclude = config["exclude_hsjc"]
+
+    names = [] # 存储name_stdid
     for key, value in std_dict_wtb.items():
         # 只需要 config["grade"] 内设置的年级
         if int(key) in config["grade"]:
@@ -32,7 +35,9 @@ def get_msg(std_dict_wtb: dict, name_qqid_map: dict, config, type: str):
     for name_stdid in names:
         name = name_stdid.split("_")[0]
 
-        if name_stdid not in name_qqid_map.keys():
+        if name_stdid in exclude:
+            pass
+        elif name_stdid not in name_qqid_map.keys():
             invalid_user.append(name)
         else:
             qq_id = name_qqid_map[name_stdid]
